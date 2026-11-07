@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isParticipant(conversationId) {
+      return signedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+    }
+    function hasActiveSubscription(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)/billing/current)
+        && get(/databases/$(database)/documents/users/$(uid)/billing/current).data.status == 'active'
+        && get(/databases/$(database)/documents/users/$(uid)/billing/current).data.currentPeriodEnd > request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid','name','email','location','bio','tags','books','offers','wish','createdAt']);
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','location','bio','tags','books','offers','wish','updatedAt']);
+      allow delete: if false;
+      match /billing/{billingId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if false; // Only the verified payment webhook may update subscription status.
+      }
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.freeMessages[request.auth.uid] == false;
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['freeMessages','lastMessage','lastAt'])
+        && request.resource.data.freeMessages.diff(resource.data.freeMessages).affectedKeys().hasOnly([request.auth.uid])
+        && (resource.data.freeMessages[request.auth.uid] == false
+            ? request.resource.data.freeMessages[request.auth.uid] == true
+            : request.resource.data.freeMessages[request.auth.uid] == true);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isParticipant(conversationId);
+        allow create: if isParticipant(conversationId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1500
+          && (get(/databases/$(database)/documents/conversations/$(conversationId)).data.freeMessages[request.auth.uid] == false
+              || hasActiveSubscription(request.auth.uid))
+          && (getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data.freeMessages[request.auth.uid] == true);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

@@ -10,23 +10,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="account.css">
+  <script type="module" src="script.js"></script>
 </head>
 <body>
   <div class="grain"></div>
-
   <header class="topbar">
-    <a class="wordmark" href="#entrance">
-      <span class="mark">S</span> SWAPSTORY
-    </a>
-
-    <nav>
-      <a href="#library">The library</a>
-      <a href="#how">How it works</a>
-      <a href="#community">Community</a>
-    </nav>
-
-    <a class="top-cta" href="#library">Explore shelves <span>↗</span></a>
+    <a class="wordmark" href="#entrance"><span class="mark">S</span> SWAPSTORY</a>
+    <nav><a href="#library">The library</a><a href="#how">How it works</a><a href="#community">Community</a></nav>
+    <div class="account-actions"><button class="top-cta" id="accountButton">Sign in / Join <span>↗</span></button><button class="top-cta chat-nav" id="openChatsButton">My chats</button></div>
     <button class="menu-toggle" aria-label="Toggle navigation">☰</button>
   </header>
 
@@ -34,216 +26,79 @@
     <section class="entrance" id="entrance">
       <div class="entrance-copy">
         <p class="eyebrow"><i></i> A DIFFERENT KIND OF SOCIAL LIBRARY</p>
-
-        <h1>
-          Don't just meet<br>
-          the reader. <em>Enter<br>their story.</em>
-        </h1>
-
-        <p class="intro">
-          A thousand books. A thousand personalities. Wander through
-          the shelves, pull out a story, and discover the person behind it.
-        </p>
-
-        <a class="gold-button" href="#library">
-          Step into the library <span>↓</span>
-        </a>
-
-        <div class="entrance-note">
-          <span class="note-line"></span>
-          SCROLL TO WANDER · PICK A BOOK · MEET A READER
-        </div>
+        <h1>Don't just meet<br>the reader. <em>Enter<br>their story.</em></h1>
+        <p class="intro">A thousand books. A thousand personalities. Wander through the shelves, pull out a story, and discover the person behind it.</p>
+        <a class="gold-button" href="#library">Step into the library <span>↓</span></a>
+        <div class="entrance-note"><span class="note-line"></span> SCROLL TO WANDER · PICK A BOOK · MEET A READER</div>
       </div>
-
       <div class="entrance-scene" aria-label="A warm, atmospheric 3D library illustration">
-        <div class="window-glow"></div>
-        <div class="lamp"><i></i><b></b></div>
-
+        <div class="window-glow"></div><div class="lamp"><i></i><b></b></div>
         <div class="scene-shelf shelf-back">
           <div class="shelf-row">
-            <span class="spine s1"></span>
-            <span class="spine s2"></span>
-            <span class="spine s3"></span>
-            <span class="spine s4"></span>
-            <span class="spine s5"></span>
-            <span class="spine s6"></span>
-            <span class="spine s7"></span>
-            <span class="spine s8"></span>
-          </div>
-
-          <div class="wood-plank"></div>
-
+            <span class="spine s1"></span><span class="spine s2"></span><span class="spine s3"></span><span class="spine s4"></span><span class="spine s5"></span><span class="spine s6"></span><span class="spine s7"></span><span class="spine s8"></span>
+          </div><div class="wood-plank"></div>
           <div class="shelf-row lower">
-            <span class="spine s9"></span>
-            <span class="spine s10"></span>
-            <span class="spine s11"></span>
-            <span class="spine s12"></span>
-            <span class="spine s13"></span>
-            <span class="spine s14"></span>
-            <span class="spine s15"></span>
-          </div>
-
-          <div class="wood-plank"></div>
+            <span class="spine s9"></span><span class="spine s10"></span><span class="spine s11"></span><span class="spine s12"></span><span class="spine s13"></span><span class="spine s14"></span><span class="spine s15"></span>
+          </div><div class="wood-plank"></div>
         </div>
-
-        <div class="open-book-art">
-          <div class="book-left">
-            <small>SWAPSTORY</small>
-            <strong>Every book<br>opens a door.</strong>
-            <i>VOL. 01 — THE HUMAN LIBRARY</i>
-          </div>
-
-          <div class="book-right">
-            <div class="page-lines"></div>
-            <div class="page-lines short"></div>
-            <b>Turn a page.<br>Find your people.</b>
-          </div>
-        </div>
-
-        <div class="scene-caption">
-          THE HUMAN LIBRARY
-          <span>EST. FOR THE CURIOUS</span>
-        </div>
+        <div class="open-book-art"><div class="book-left"><small>SWAPSTORY</small><strong>Every book<br>opens a door.</strong><i>VOL. 01 — THE HUMAN LIBRARY</i></div><div class="book-right"><div class="page-lines"></div><div class="page-lines short"></div><b>Turn a page.<br>Find your people.</b></div></div>
+        <div class="scene-caption">THE HUMAN LIBRARY <span>EST. FOR THE CURIOUS</span></div>
       </div>
-
-      <div class="scroll-cue">
-        <span></span> SCROLL TO EXPLORE
-      </div>
+      <div class="scroll-cue"><span></span> SCROLL TO EXPLORE</div>
     </section>
 
     <section class="library-intro" id="library">
       <div class="section-kicker">01 / THE READING ROOM</div>
-
       <div class="library-heading">
-        <div>
-          <h2>Every spine holds<br><em>a whole world.</em></h2>
-        </div>
-
-        <p>
-          These aren't just books. Each one belongs to a reader.
-          Choose a spine that catches your eye, open it, and step
-          into their bookshelf.
-        </p>
+        <div><h2>Every spine holds<br><em>a whole world.</em></h2></div>
+        <p>These aren't just books. Each one belongs to a reader. Choose a spine that catches your eye, open it, and step into their bookshelf.</p>
       </div>
-
       <div class="shelf-room" id="shelfRoom">
-        <div class="room-label">
-          <span>THE COMMUNITY ARCHIVE</span>
-          <span>SELECT A BOOK TO OPEN ↗</span>
-        </div>
-
+        <div class="room-label"><span>THE COMMUNITY ARCHIVE</span><span>SELECT A BOOK TO OPEN ↗</span></div>
         <div class="grand-shelf">
           <div class="shelf-top"></div>
-
           <div class="book-row" id="bookRow"></div>
-
           <div class="shelf-board"></div>
           <div class="shelf-shadow"></div>
-
           <div class="book-row second-row" id="bookRowTwo"></div>
-
           <div class="shelf-board second-board"></div>
         </div>
-
         <div class="shelf-floor"></div>
-
-        <div class="shelf-hint">
-          MOVE YOUR CURSOR ACROSS THE SHELF · CLICK A BOOK TO EXPLORE
-        </div>
+        <div class="shelf-hint">MOVE YOUR CURSOR ACROSS THE SHELF · CLICK A BOOK TO EXPLORE</div>
       </div>
-
-      <div class="library-footer">
-        <span>06 READERS FEATURED</span>
-        <span>MORE STORIES ARE WAITING TO BE WRITTEN</span>
-      </div>
+      <div class="library-footer"><span id="readerCount">COMMUNITY READERS</span><span>MORE STORIES ARE WAITING TO BE WRITTEN</span></div>
     </section>
 
     <section class="journey" id="how">
       <div class="journey-visual">
-        <div class="floating-page page-one">
-          A good book<br>
-          is a conversation<br>
-          waiting to happen.
-        </div>
-
-        <div class="floating-page page-two">
-          <span>SWAP</span>
-          <b>01</b>
-          <small>DISCOVER</small>
-        </div>
-
-        <div class="floating-page page-three">
-          <span>STORY</span>
-          <b>02</b>
-          <small>CONNECT</small>
-        </div>
-
+        <div class="floating-page page-one">A good book<br>is a conversation<br>waiting to happen.</div>
+        <div class="floating-page page-two"><span>SWAP</span><b>01</b><small>DISCOVER</small></div>
+        <div class="floating-page page-three"><span>STORY</span><b>02</b><small>CONNECT</small></div>
         <div class="journey-orbit"></div>
       </div>
-
       <div class="journey-copy">
         <div class="section-kicker">02 / THE EXCHANGE</div>
-
         <h2>One book.<br><em>Two new chapters.</em></h2>
-
-        <p>
-          SwapStory brings readers together through the books that
-          shaped them. Find someone with a story you want to read,
-          then offer one of yours in return.
-        </p>
-
+        <p>SwapStory brings readers together through the books that shaped them. Find someone with a story you want to read, then offer one of yours in return.</p>
         <div class="steps">
-          <div>
-            <b>01</b>
-            <span>
-              <strong>Browse the shelves</strong>
-              <small>Explore real readers and the books they love.</small>
-            </span>
-          </div>
-
-          <div>
-            <b>02</b>
-            <span>
-              <strong>Open their story</strong>
-              <small>See their reading list, interests and swap wish.</small>
-            </span>
-          </div>
-
-          <div>
-            <b>03</b>
-            <span>
-              <strong>Make an exchange</strong>
-              <small>Start a conversation and arrange a safe public swap.</small>
-            </span>
-          </div>
+          <div><b>01</b><span><strong>Browse the shelves</strong><small>Explore real readers and the books they love.</small></span></div>
+          <div><b>02</b><span><strong>Open their story</strong><small>See their reading list, interests and swap wish.</small></span></div>
+          <div><b>03</b><span><strong>Make an exchange</strong><small>Start a conversation and arrange a safe public swap.</small></span></div>
         </div>
       </div>
     </section>
 
     <section class="community" id="community">
       <div class="section-kicker">03 / A NOTE FROM THE LIBRARY</div>
-
       <h2>Stories travel further<br>when <em>we share them.</em></h2>
-
-      <p>
-        Bring a book you have finished. Leave with a story you haven't met yet.
-      </p>
-
-      <a class="gold-button" href="#library">
-        Find your next read <span>↗</span>
-      </a>
-
-      <div class="community-bottom">
-        <span>SWAPSTORY © 2026</span>
-        <span>MADE FOR READERS, BY READERS</span>
-        <span>EVERY BOOK HAS A NEXT LIFE.</span>
-      </div>
+      <p>Bring a book you have finished. Leave with a story you haven't met yet.</p>
+      <a class="gold-button" href="#library">Find your next read <span>↗</span></a>
+      <div class="community-bottom"><span>SWAPSTORY © 2026</span><span>MADE FOR READERS, BY READERS</span><span>EVERY BOOK HAS A NEXT LIFE.</span></div>
     </section>
   </main>
 
   <div class="profile-overlay" id="profileOverlay" aria-hidden="true">
     <button class="close-profile" id="closeProfile" aria-label="Close profile">×</button>
-
     <div class="profile-book-scene">
       <div class="profile-book" id="profileBook">
         <div class="profile-cover">
@@ -253,7 +108,6 @@
           <div class="cover-author" id="coverAuthor">A READER'S COLLECTION</div>
           <div class="cover-bottom">OPEN TO DISCOVER</div>
         </div>
-
         <div class="profile-pages">
           <div class="profile-page-left">
             <div class="page-overline">THE READER</div>
@@ -263,36 +117,29 @@
             <p class="reader-bio" id="readerBio"></p>
             <div class="reader-tags" id="readerTags"></div>
           </div>
-
           <div class="profile-page-right">
             <div class="page-overline">THEIR BOOKSHELF</div>
             <h3>Books that<br>made the reader.</h3>
             <div class="read-books" id="readBooks"></div>
-
-            <div class="swap-wish">
-              <small>LOOKING TO SWAP FOR</small>
-              <strong id="swapWish"></strong>
-            </div>
-
-            <button class="message-button" id="messageButton">
-              Start a conversation <span>↗</span>
-            </button>
+            <div class="swap-wish"><small>LOOKING TO SWAP FOR</small><strong id="swapWish"></strong></div>
+            <button class="message-button" id="messageButton">Start a conversation <span>↗</span></button>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="profile-instruction">
-      A READER'S STORY · CLOSE TO RETURN TO THE SHELVES
-    </div>
+    <div class="profile-instruction">A READER'S STORY · CLOSE TO RETURN TO THE SHELVES</div>
   </div>
 
-  <div class="toast" id="toast" role="status"></div>
 
-  <footer class="site-footer">
-    <span>SWAPSTORY</span>
-    <span>THE WORLD IS A LIBRARY. GO MEET A STORY.</span>
-    <a href="#entrance">BACK TO TOP ↑</a>
-  </footer>
+  <div class="modal-backdrop" id="authModal" aria-hidden="true"><section class="app-modal auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button class="modal-x" data-close="authModal" aria-label="Close">×</button><p class="section-kicker">YOUR PLACE IN THE LIBRARY</p><h2 id="authTitle">Welcome <em>reader.</em></h2><div class="auth-tabs"><button class="active" data-auth-mode="login">Sign in</button><button data-auth-mode="signup">Create account</button></div><form id="authForm"><label>Email address<input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com"></label><label>Password<input type="password" id="authPassword" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"></label><button class="gold-button form-submit" type="submit" id="authSubmit">Sign in ↗</button></form><p class="modal-note" id="authNote">Your reader account keeps your profile and conversations in one place.</p></section></div>
+
+  <div class="modal-backdrop" id="profileEditor" aria-hidden="true"><section class="app-modal" role="dialog" aria-modal="true"><button class="modal-x" data-close="profileEditor">×</button><p class="section-kicker">READER PROFILE</p><h2>Edit your <em>story.</em></h2><form id="profileForm" class="profile-form"><label>Display name<input id="editName" required maxlength="50"></label><label>City / location<input id="editLocation" maxlength="80" placeholder="Pune, India"></label><label>Short introduction<textarea id="editBio" maxlength="500" rows="3" placeholder="Tell readers what you love... "></textarea></label><label>Reading interests (comma separated)<input id="editTags" maxlength="200" placeholder="Mystery, history, poetry"></label><label>Books you've read (one per line)<textarea id="editBooks" rows="4" placeholder="The Alchemist — Paulo Coelho"></textarea></label><label>Book you want to swap for<input id="editWish" maxlength="100" placeholder="The Midnight Library"></label><label>Books available to exchange (one per line)<textarea id="editOffers" rows="3" placeholder="Book title — Author"></textarea></label><button class="gold-button form-submit" type="submit">Save my profile ↗</button></form></section></div>
+
+  <aside class="chat-drawer" id="chatDrawer" aria-hidden="true"><div class="chat-head"><div><p class="section-kicker">SWAPSTORY MESSAGES</p><h2>Your <em>conversations.</em></h2></div><button class="modal-x" id="closeChatsButton">×</button></div><div class="chat-layout"><div class="chat-list" id="chatList"><p class="empty-note">Your conversations will appear here.</p></div><section class="chat-thread"><div class="thread-head" id="threadHead">Choose a conversation to begin</div><div class="message-list" id="messageList"><p class="empty-note">Open a reader's book and start a conversation.</p></div><div class="chat-composer" id="chatComposer"><textarea id="messageInput" rows="2" maxlength="1500" placeholder="Write your message..."></textarea><button id="sendMessageButton" class="gold-button">Send ↗</button></div><p class="chat-footnote" id="chatFootnote">One free message from each reader. After that, a ₹99/month subscription unlocks sending.</p></section></div></aside>
+
+  <div class="modal-backdrop" id="subscribeModal" aria-hidden="true"><section class="app-modal subscribe-card" role="dialog" aria-modal="true"><button class="modal-x" data-close="subscribeModal">×</button><p class="section-kicker">KEEP THE CONVERSATION GOING</p><h2>Unlock <em>unlimited chat.</em></h2><div class="price-line"><strong>₹99</strong><span>/ month<br>Cancel anytime through your payment account.</span></div><ul><li>Unlimited outgoing messages</li><li>Keep all your conversations</li><li>Meet more readers and arrange book swaps</li></ul><button class="gold-button form-submit" id="subscribeButton">Subscribe with Razorpay ↗</button><p class="modal-note">Secure recurring payment. Subscription activation is confirmed by the payment server.</p></section></div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <footer class="site-footer"><span>SWAPSTORY</span><span>THE WORLD IS A LIBRARY. GO MEET A STORY.</span><a href="#entrance">BACK TO TOP ↑</a></footer>
 </body>
 </html>

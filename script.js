@@ -1,531 +1,72 @@
-// ==========================================
-// SWAPSTORY — 3D LIBRARY INTERACTION
-// ==========================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { firebaseConfig, API_BASE_URL } from "./firebase-config.js";
 
-const readers = [
-  {
-    id: 1,
-    name: "Aarav Mehta",
-    initial: "A",
-    location: "Pune, India",
-    title: "The Quiet Observer",
-    author: "AARAV MEHTA",
-    symbol: "✦",
-    color: "#8c4e37",
-    bio: "I collect stories the way some people collect postcards. Mostly drawn to thoughtful fiction, big questions and books that make an ordinary day feel a little wider.",
-    tags: ["Literary fiction", "Design", "Slow travel"],
-    books: [
-      ["The Alchemist", "Paulo Coelho"],
-      ["Norwegian Wood", "Haruki Murakami"],
-      ["The Book Thief", "Markus Zusak"],
-      ["Sapiens", "Yuval Noah Harari"]
-    ],
-    wish: "The Midnight Library"
-  },
+const $ = (id) => document.getElementById(id);
+const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_") && firebaseConfig.projectId && !firebaseConfig.projectId.startsWith("YOUR_");
+let auth, db, currentUser=null, currentProfile=null, activeConversation=null, stopChats=null, stopMessages=null, stopUserFeed=null;
+let authMode="login", readers=[], selectedReader=null;
+const palettes=["#8d4e38","#52644c","#4b5b70","#956c4b","#76533c","#68526f","#a15e43","#48666a"];
 
-  {
-    id: 2,
-    name: "Mira Kapoor",
-    initial: "M",
-    location: "Mumbai, India",
-    title: "Between the Lines",
-    author: "MIRA KAPOOR",
-    symbol: "❋",
-    color: "#52644c",
-    bio: "A weekend reader, a tea person and a fan of stories with complicated characters. I love passing on books with notes tucked between the pages.",
-    tags: ["Romance", "Poetry", "Psychology"],
-    books: [
-      ["Pride and Prejudice", "Jane Austen"],
-      ["The Song of Achilles", "Madeline Miller"],
-      ["Milk and Honey", "Rupi Kaur"],
-      ["Eleanor Oliphant Is Completely Fine", "Gail Honeyman"]
-    ],
-    wish: "Educated"
-  },
+function toast(message){const el=$("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),3200);}
+function safe(value=""){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function showModal(id){$(id).classList.add("visible");$(id).setAttribute("aria-hidden","false");}
+function hideModal(id){$(id).classList.remove("visible");$(id).setAttribute("aria-hidden","true");}
+function requireLogin(){if(!currentUser){showModal("authModal");return false;}return true;}
 
-  {
-    id: 3,
-    name: "Kabir Shah",
-    initial: "K",
-    location: "Bengaluru, India",
-    title: "Curious by Nature",
-    author: "KABIR SHAH",
-    symbol: "⌘",
-    color: "#4d596c",
-    bio: "I read to understand how things work: people, cities, technology and the natural world. Happy to swap non-fiction for a great novel.",
-    tags: ["Science", "History", "Technology"],
-    books: [
-      ["Atomic Habits", "James Clear"],
-      ["A Brief History of Time", "Stephen Hawking"],
-      ["Deep Work", "Cal Newport"],
-      ["The Martian", "Andy Weir"]
-    ],
-    wish: "Thinking, Fast and Slow"
-  },
+if(configured){const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);onAuthStateChanged(auth,handleAuth);}else{toast("Connect your Firebase project in firebase-config.js to activate accounts and chat.");}
 
-  {
-    id: 4,
-    name: "Isha Rao",
-    initial: "I",
-    location: "Hyderabad, India",
-    title: "A Garden of Words",
-    author: "ISHA RAO",
-    symbol: "❀",
-    color: "#956b4a",
-    bio: "My shelf is a mix of magical worlds, Indian writing and books that feel like a warm conversation. I love discovering new authors.",
-    tags: ["Fantasy", "Indian writing", "Mystery"],
-    books: [
-      ["The Palace of Illusions", "Chitra Banerjee Divakaruni"],
-      ["The Hobbit", "J.R.R. Tolkien"],
-      ["The Henna Artist", "Alka Joshi"],
-      ["A Man Called Ove", "Fredrik Backman"]
-    ],
-    wish: "The House in the Cerulean Sea"
-  },
-
-  {
-    id: 5,
-    name: "Rohan Das",
-    initial: "R",
-    location: "Kolkata, India",
-    title: "The Long Way Home",
-    author: "ROHAN DAS",
-    symbol: "☼",
-    color: "#80613d",
-    bio: "I am happiest with a mystery novel, an old classic or a book about somewhere I have never been. Looking for readers who enjoy a little adventure.",
-    tags: ["Thrillers", "Classics", "Travel"],
-    books: [
-      ["The Silent Patient", "Alex Michaelides"],
-      ["The Great Gatsby", "F. Scott Fitzgerald"],
-      ["Shantaram", "Gregory David Roberts"],
-      ["Into the Wild", "Jon Krakauer"]
-    ],
-    wish: "The Thursday Murder Club"
-  },
-
-  {
-    id: 6,
-    name: "Ananya Sen",
-    initial: "A",
-    location: "Delhi, India",
-    title: "Small Worlds, Big Ideas",
-    author: "ANANYA SEN",
-    symbol: "☾",
-    color: "#66516c",
-    bio: "Poetry, essays and speculative fiction are my comfort zone. I like books that leave a question in your head long after the last page.",
-    tags: ["Poetry", "Essays", "Speculative fiction"],
-    books: [
-      ["The Prophet", "Kahlil Gibran"],
-      ["Exhalation", "Ted Chiang"],
-      ["Braiding Sweetgrass", "Robin Wall Kimmerer"],
-      ["The Anthropocene Reviewed", "John Green"]
-    ],
-    wish: "Invisible Cities"
-  }
-];
-
-
-// ==========================================
-// BOOK COVER COLOURS
-// ==========================================
-
-const palettes = [
-  "#8d4e38",
-  "#52644c",
-  "#4b5b70",
-  "#956c4b",
-  "#76533c",
-  "#68526f",
-  "#a15e43",
-  "#48666a",
-  "#8a7144",
-  "#634b58",
-  "#52714f",
-  "#a35f48"
-];
-
-
-// ==========================================
-// CREATE BOOKS ON THE SHELVES
-// ==========================================
-
-function makeBook(reader, index) {
-
-  const book = document.createElement("button");
-
-  book.className = "reader-book";
-  book.type = "button";
-
-  book.setAttribute(
-    "aria-label",
-    `Open ${reader.name}'s reader profile`
-  );
-
-  book.style.setProperty("--book", reader.color);
-
-  book.style.background =
-    `linear-gradient(90deg, ${reader.color}, ${reader.color} 72%, #24170f)`;
-
-  book.style.setProperty(
-    "--height",
-    `${150 + (index * 17) % 70}px`
-  );
-
-  book.innerHTML = `
-    <span class="spine-symbol">${reader.symbol}</span>
-
-    <span class="spine-title">
-      ${reader.title}
-    </span>
-
-    <span class="spine-author">
-      ${reader.initial} · ${String(reader.id).padStart(2, "0")}
-    </span>
-  `;
-
-  book.addEventListener("click", () => {
-    openReader(reader, book);
-  });
-
-  return book;
+async function handleAuth(user){
+  currentUser=user;
+  if(stopChats)stopChats(); if(stopMessages)stopMessages(); if(stopUserFeed)stopUserFeed();
+  if(!user){currentProfile=null;$("accountButton").textContent="Sign in / Join ↗";renderBooks([]);return;}
+  const userRef=doc(db,"users",user.uid);const snap=await getDoc(userRef);
+  if(!snap.exists()){
+    currentProfile={uid:user.uid,name:user.displayName||user.email.split("@")[0],location:"",bio:"",tags:[],books:[],offers:[],wish:"",createdAt:serverTimestamp()};
+    await setDoc(userRef,currentProfile);
+  }else currentProfile=snap.data();
+  $("accountButton").textContent=`${currentProfile.name||"My account"} · Sign out`;
+  $("accountButton").title="Click to edit your profile, or sign out";
+  subscribeToReaders();subscribeToChats();
 }
 
-
-// ==========================================
-// POPULATE BOTH SHELVES
-// ==========================================
-
-const rowOne = document.getElementById("bookRow");
-const rowTwo = document.getElementById("bookRowTwo");
-
-[...readers, ...readers.slice(0, 3)].forEach((reader, index) => {
-
-  const book = makeBook(reader, index);
-
-  if (index < 5) {
-    rowOne.appendChild(book);
-  } else {
-    rowTwo.appendChild(book);
-  }
-
+$("accountButton").addEventListener("click",async()=>{
+  if(!configured){toast("First add your Firebase settings in firebase-config.js.");return;}
+  if(!currentUser){authMode="login";updateAuthMode();showModal("authModal");return;}
+  const choice=window.confirm("Press OK to edit your reader profile. Press Cancel to sign out.");
+  if(choice){fillProfileForm();showModal("profileEditor");}else await signOut(auth);
 });
 
-
-// ==========================================
-// PROFILE BOOK OPENING
-// ==========================================
-
-const overlay = document.getElementById("profileOverlay");
-
-const profileBook = document.getElementById("profileBook");
-
-let lastBook = null;
-
-
-function openReader(reader, book) {
-
-  lastBook = book;
-
-  document.querySelectorAll(".reader-book").forEach(b => {
-    b.classList.remove("selected");
-  });
-
-  book.classList.add("selected");
-
-
-  // Update the book cover
-
-  document.getElementById("coverArt").textContent =
-    reader.symbol;
-
-  document.getElementById("coverTitle").textContent =
-    reader.title.toUpperCase();
-
-  document.getElementById("coverAuthor").textContent =
-    reader.author;
-
-
-  // Update reader information
-
-  document.getElementById("readerAvatar").textContent =
-    reader.initial;
-
-  document.getElementById("readerAvatar").style.background =
-    reader.color;
-
-  document.getElementById("readerName").textContent =
-    reader.name;
-
-  document.getElementById("readerLocation").textContent =
-    reader.location;
-
-  document.getElementById("readerBio").textContent =
-    reader.bio;
-
-
-  // Reader interests
-
-  document.getElementById("readerTags").innerHTML =
-    reader.tags
-      .map(tag => `<span>${escapeHTML(tag)}</span>`)
-      .join("");
-
-
-  // Reader's books
-
-  document.getElementById("readBooks").innerHTML =
-    reader.books.map((bookData, index) => {
-
-      return `
-        <div class="read-book">
-
-          <span
-            class="mini-cover"
-            style="background:${palettes[(reader.id + index) % palettes.length]}"
-          >
-            ${index + 1}
-          </span>
-
-          <span>
-            <strong>${escapeHTML(bookData[0])}</strong>
-            <small>${escapeHTML(bookData[1])}</small>
-          </span>
-
-        </div>
-      `;
-
-    }).join("");
-
-
-  // Book they want to exchange
-
-  document.getElementById("swapWish").textContent =
-    reader.wish;
-
-
-  // Demo conversation button
-
-  document.getElementById("messageButton").onclick = () => {
-
-    showToast(
-      `Demo: a conversation with ${reader.name} would start here.`
-    );
-
-  };
-
-
-  // Open profile overlay
-
-  overlay.classList.add("open");
-
-  overlay.setAttribute("aria-hidden", "false");
-
-  document.body.style.overflow = "hidden";
-
-
-  profileBook.style.setProperty(
-    "--profile-color",
-    reader.color
-  );
-
-  document.getElementById("coverArt").style.color =
-    "#f0d4a5";
-
-  document.getElementById("profileBook").scrollTop = 0;
-
-
-  setTimeout(() => {
-    document.getElementById("closeProfile").focus();
-  }, 150);
-
-}
-
-
-// ==========================================
-// CLOSE PROFILE
-// ==========================================
-
-function closeReader() {
-
-  overlay.classList.remove("open");
-
-  overlay.setAttribute("aria-hidden", "true");
-
-  document.body.style.overflow = "";
-
-  if (lastBook) {
-    lastBook.classList.remove("selected");
-  }
-
-}
-
-
-document.getElementById("closeProfile").addEventListener(
-  "click",
-  closeReader
-);
-
-
-overlay.addEventListener("click", event => {
-
-  if (event.target === overlay) {
-    closeReader();
-  }
-
-});
-
-
-document.addEventListener("keydown", event => {
-
-  if (
-    event.key === "Escape" &&
-    overlay.classList.contains("open")
-  ) {
-    closeReader();
-  }
-
-});
-
-
-// ==========================================
-// SAFE HTML TEXT
-// ==========================================
-
-function escapeHTML(value) {
-
-  return String(value).replace(/[&<>"']/g, character => {
-
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    }[character];
-
-  });
-
-}
-
-
-// ==========================================
-// TOAST MESSAGE
-// ==========================================
-
-function showToast(message) {
-
-  const toast = document.getElementById("toast");
-
-  toast.textContent = message;
-
-  toast.classList.add("show");
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2800);
-
-}
-
-
-// ==========================================
-// SCROLL-LINKED 3D DEPTH EFFECT
-// ==========================================
-
-const shelfRoom = document.getElementById("shelfRoom");
-
-const entranceScene = document.querySelector(".entrance-scene");
-
-let ticking = false;
-
-
-function updateDepth() {
-
-  const y = window.scrollY;
-
-
-  // Entrance bookshelf moves as the visitor scrolls
-
-  if (entranceScene) {
-
-    const move = Math.min(y * 0.12, 95);
-
-    entranceScene.style.transform =
-      `translate3d(0, ${move}px, 0) rotateY(${-Math.min(y * 0.006, 5)}deg)`;
-
-    entranceScene.style.opacity =
-      String(Math.max(0.25, 1 - y / 900));
-
-  }
-
-
-  // Main shelf tilts with scroll position
-
-  if (shelfRoom) {
-
-    const rect = shelfRoom.getBoundingClientRect();
-
-    const progress = Math.max(
-      -1,
-      Math.min(
-        1,
-        (window.innerHeight - rect.top) /
-        (window.innerHeight + rect.height)
-      )
-    );
-
-    shelfRoom.style.transform =
-      `perspective(1400px) rotateX(${(1 - progress) * 2.2}deg) translateY(${(1 - progress) * 13}px)`;
-
-  }
-
-  ticking = false;
-
-}
-
-
-window.addEventListener(
-  "scroll",
-  () => {
-
-    if (!ticking) {
-
-      requestAnimationFrame(updateDepth);
-
-      ticking = true;
-
-    }
-
-  },
-  { passive: true }
-);
-
-updateDepth();
-
-
-// ==========================================
-// MOBILE NAVIGATION
-// ==========================================
-
-document.querySelector(".menu-toggle").addEventListener(
-  "click",
-  () => {
-
-    document
-      .querySelector(".topbar")
-      .classList.toggle("nav-open");
-
-  }
-);
-
-
-document.querySelectorAll(".topbar nav a").forEach(link => {
-
-  link.addEventListener("click", () => {
-
-    document
-      .querySelector(".topbar")
-      .classList.remove("nav-open");
-
-  });
-
-});
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>hideModal(b.dataset.close)));
+document.querySelectorAll(".modal-backdrop").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)hideModal(m.id);}));
+document.querySelectorAll("[data-auth-mode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authMode;updateAuthMode();}));
+function updateAuthMode(){document.querySelectorAll("[data-auth-mode]").forEach(b=>b.classList.toggle("active",b.dataset.authMode===authMode));$("authTitle").innerHTML=authMode==="login"?"Welcome <em>reader.</em>":"Join the <em>library.</em>";$("authSubmit").textContent=authMode==="login"?"Sign in ↗":"Create account ↗";$("authPassword").autocomplete=authMode==="login"?"current-password":"new-password";}
+$("authForm").addEventListener("submit",async e=>{e.preventDefault();const email=$("authEmail").value.trim(),password=$("authPassword").value;const btn=$("authSubmit");btn.disabled=true;try{if(authMode==="signup"){const cred=await createUserWithEmailAndPassword(auth,email,password);await updateProfile(cred.user,{displayName:email.split("@")[0]});}else await signInWithEmailAndPassword(auth,email,password);hideModal("authModal");toast("Welcome to SwapStory.");}catch(err){toast(authError(err.code));}finally{btn.disabled=false;}});
+function authError(code){return ({"auth/email-already-in-use":"This email already has an account.","auth/invalid-email":"Enter a valid email address.","auth/weak-password":"Use a password with at least 6 characters.","auth/invalid-credential":"Email or password is incorrect.","auth/too-many-requests":"Too many attempts. Please try again later."})[code]||"Could not sign in. Check your connection and Firebase settings.";}
+
+function fillProfileForm(){const p=currentProfile||{};$("editName").value=p.name||"";$("editLocation").value=p.location||"";$("editBio").value=p.bio||"";$("editTags").value=(p.tags||[]).join(", ");$("editBooks").value=(p.books||[]).map(b=>typeof b==="string"?b:`${b.title} — ${b.author||""}`).join("\n");$("editWish").value=p.wish||"";$("editOffers").value=(p.offers||[]).join("\n");}
+function parseLines(v){return v.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,30);}
+$("profileForm").addEventListener("submit",async e=>{e.preventDefault();if(!requireLogin())return;const p={name:$("editName").value.trim(),location:$("editLocation").value.trim(),bio:$("editBio").value.trim(),tags:$("editTags").value.split(",").map(x=>x.trim()).filter(Boolean).slice(0,12),books:parseLines($("editBooks").value),wish:$("editWish").value.trim(),offers:parseLines($("editOffers").value),updatedAt:serverTimestamp()};try{await updateDoc(doc(db,"users",currentUser.uid),p);currentProfile={...currentProfile,...p};await updateProfile(currentUser,{displayName:p.name});hideModal("profileEditor");toast("Your reader profile has been saved.");}catch(err){toast("Could not save profile: "+err.message);}});
+
+function subscribeToReaders(){const q=query(collection(db,"users"));stopUserFeed=onSnapshot(q,snap=>{readers=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(r=>r.uid!==currentUser.uid);renderBooks(readers);},err=>toast("Could not load readers. Check Firestore rules."));}
+function renderBooks(items){const row1=$("bookRow"),row2=$("bookRowTwo");if(!row1||!row2)return;row1.innerHTML="";row2.innerHTML="";items.forEach((r,i)=>{const b=document.createElement("button");b.type="button";b.className="reader-book";const color=palettes[i%palettes.length];b.style.setProperty("--book",color);b.style.background=`linear-gradient(90deg,${color},${color} 72%,#24170f)`;b.style.setProperty("--height",`${150+(i*17)%70}px`);b.setAttribute("aria-label",`Open ${r.name||"reader"}'s profile`);b.innerHTML=`<span class="spine-symbol">${i%2?"❋":"✦"}</span><span class="spine-title">${safe(r.name||"A reader")}</span><span class="spine-author">READER · ${String(i+1).padStart(2,"0")}</span>`;b.addEventListener("click",()=>openReader(r,b,color));(i%2?row2:row1).appendChild(b);});$("readerCount").textContent=`${items.length} READER${items.length===1?"":"S"} IN THE LIBRARY`;if(!items.length){const p=document.createElement("p");p.className="empty-note shelf-empty";p.textContent="No readers yet. Create your account and be the first to add a story.";row1.appendChild(p);}}
+
+const overlay=$("profileOverlay");let lastBook=null;
+function openReader(reader,book,color){selectedReader=reader;lastBook=book;document.querySelectorAll(".reader-book").forEach(x=>x.classList.remove("selected"));book.classList.add("selected");$("coverArt").textContent="✦";$("coverTitle").textContent=(reader.name||"A READER").toUpperCase();$("coverAuthor").textContent="A SWAPSTORY READER";$("readerAvatar").textContent=(reader.name||"R").slice(0,1).toUpperCase();$("readerAvatar").style.background=color;$("readerName").textContent=reader.name||"Reader";$("readerLocation").textContent=reader.location||"Location not shared";$("readerBio").textContent=reader.bio||"This reader is still writing their introduction.";$("readerTags").innerHTML=(reader.tags||[]).map(t=>`<span>${safe(t)}</span>`).join("");$("readBooks").innerHTML=(reader.books||[]).map((item,i)=>{const title=typeof item==="string"?item:item.title;return `<div class="read-book"><span class="mini-cover" style="background:${palettes[i%palettes.length]}">${i+1}</span><span><strong>${safe(title||"")}</strong></span></div>`;}).join("")||"<p>No books added yet.</p>";$("swapWish").textContent=reader.wish||"Open to suggestions";$("messageButton").onclick=()=>startConversation(reader);overlay.classList.add("open");overlay.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";$("profileBook").style.setProperty("--profile-color",color);}
+function closeReader(){overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true");document.body.style.overflow="";if(lastBook)lastBook.classList.remove("selected");}
+$("closeProfile").addEventListener("click",closeReader);overlay.addEventListener("click",e=>{if(e.target===overlay)closeReader();});document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeReader();document.querySelectorAll(".modal-backdrop.visible").forEach(m=>hideModal(m.id));}});
+
+function conversationId(a,b){return [a,b].sort().join("__");}
+async function startConversation(reader){if(!requireLogin())return;if(reader.uid===currentUser.uid)return;try{const id=conversationId(currentUser.uid,reader.uid),ref=doc(db,"conversations",id),snap=await getDoc(ref);if(!snap.exists()){await setDoc(ref,{participants:[currentUser.uid,reader.uid],participantNames:{[currentUser.uid]:currentProfile.name,[reader.uid]:reader.name||"Reader"},freeMessages:{[currentUser.uid]:false,[reader.uid]:false},lastMessage:"",lastAt:serverTimestamp(),createdAt:serverTimestamp()});}closeReader();openChat(id,reader.uid,reader.name||"Reader");}catch(e){toast("Could not start chat. Please check Firestore rules.");}}
+function subscribeToChats(){const q=query(collection(db,"conversations"),where("participants","array-contains",currentUser.uid));stopChats=onSnapshot(q,snap=>{const chats=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lastAt?.toMillis?.()||0)-(a.lastAt?.toMillis?.()||0));renderChatList(chats);},()=>toast("Could not load your conversations."));}
+function renderChatList(chats){const list=$("chatList");list.innerHTML="";if(!chats.length){list.innerHTML='<p class="empty-note">No conversations yet. Open a reader profile to say hello.</p>';return;}chats.forEach(c=>{const other=c.participants.find(x=>x!==currentUser.uid),name=c.participantNames?.[other]||"Reader";const b=document.createElement("button");b.className="chat-list-item"+(activeConversation===c.id?" active":"");b.innerHTML=`<strong>${safe(name)}</strong><small>${safe(c.lastMessage||"Start your conversation")}</small>`;b.onclick=()=>openChat(c.id,other,name);list.appendChild(b);});}
+async function openChat(id,otherUid,otherName){activeConversation=id;$("chatDrawer").classList.add("open");$("chatDrawer").setAttribute("aria-hidden","false");$("threadHead").textContent=otherName;$("messageList").innerHTML='<p class="empty-note">Loading messages…</p>';if(stopMessages)stopMessages();const msgQuery=query(collection(db,"conversations",id,"messages"),orderBy("createdAt","asc"));stopMessages=onSnapshot(msgQuery,snap=>{const area=$("messageList");area.innerHTML="";snap.docs.forEach(d=>{const m=d.data(),bubble=document.createElement("div");bubble.className="message-bubble"+(m.senderId===currentUser.uid?" mine":"");bubble.innerHTML=`<p>${safe(m.text)}</p><small>${m.senderId===currentUser.uid?"You":safe(otherName)}</small>`;area.appendChild(bubble);});area.scrollTop=area.scrollHeight;});$("sendMessageButton").onclick=()=>sendMessage(id,otherUid);$("messageInput").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(id,otherUid);}};$("messageInput").focus();}
+async function sendMessage(id,otherUid){const textValue=$("messageInput").value.trim();if(!textValue)return;const send=$("sendMessageButton");send.disabled=true;try{const convoRef=doc(db,"conversations",id),msgRef=doc(collection(db,"conversations",id,"messages")),billingRef=doc(db,"users",currentUser.uid,"billing","current");await runTransaction(db,async tx=>{const cs=await tx.get(convoRef);if(!cs.exists())throw new Error("Conversation not found.");const data=cs.data(),billing=await tx.get(billingRef),sub=billing.exists()&&billing.data().status==="active"&&(!billing.data().currentPeriodEnd||billing.data().currentPeriodEnd.toMillis()>Date.now());if(data.freeMessages?.[currentUser.uid]===true&&!sub)throw new Error("SUBSCRIPTION_REQUIRED");if(data.freeMessages?.[currentUser.uid]!==true){tx.update(convoRef,{[`freeMessages.${currentUser.uid}`]:true});}tx.set(msgRef,{senderId:currentUser.uid,text:textValue,createdAt:serverTimestamp()});tx.update(convoRef,{lastMessage:textValue.slice(0,120),lastAt:serverTimestamp()});});$("messageInput").value="";}catch(e){if(e.message==="SUBSCRIPTION_REQUIRED"){showModal("subscribeModal");}else if(e.code==="permission-denied"){toast("Message blocked. Check your Firestore rules and subscription status.");}else toast(e.message||"Message could not be sent.");}finally{send.disabled=false;}}
+
+$("openChatsButton").addEventListener("click",()=>{if(requireLogin()){$("chatDrawer").classList.add("open");$("chatDrawer").setAttribute("aria-hidden","false");}});
+$("closeChatsButton").addEventListener("click",()=>{$("chatDrawer").classList.remove("open");$("chatDrawer").setAttribute("aria-hidden","true");});
+$("subscribeButton").addEventListener("click",async()=>{if(!requireLogin())return;if(!API_BASE_URL||API_BASE_URL.includes("YOUR-WORKER")){toast("Deploy the Cloudflare Worker and set API_BASE_URL first.");return;}const b=$("subscribeButton");b.disabled=true;try{const token=await currentUser.getIdToken();const response=await fetch(`${API_BASE_URL}/create-subscription`,{method:"POST",headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not create subscription.");if(data.short_url)window.location.href=data.short_url;else throw new Error("Payment link was not returned.");}catch(e){toast(e.message);}finally{b.disabled=false;}});
+
+// Keep the original depth effect and responsive navigation.
+const shelfRoom=$("shelfRoom"),entranceScene=document.querySelector(".entrance-scene");let ticking=false;function updateDepth(){const y=window.scrollY;if(entranceScene){const move=Math.min(y*.12,95);entranceScene.style.transform=`translate3d(0,${move}px,0) rotateY(${-Math.min(y*.006,5)}deg)`;entranceScene.style.opacity=String(Math.max(.25,1-y/900));}if(shelfRoom){const rect=shelfRoom.getBoundingClientRect(),progress=Math.max(-1,Math.min(1,(window.innerHeight-rect.top)/(window.innerHeight+rect.height)));shelfRoom.style.transform=`perspective(1400px) rotateX(${(1-progress)*2.2}deg) translateY(${(1-progress)*13}px)`;}ticking=false;}window.addEventListener("scroll",()=>{if(!ticking){requestAnimationFrame(updateDepth);ticking=true;}},{passive:true});updateDepth();document.querySelector(".menu-toggle").addEventListener("click",()=>document.querySelector(".topbar").classList.toggle("nav-open"));document.querySelectorAll(".topbar nav a").forEach(a=>a.addEventListener("click",()=>document.querySelector(".topbar").classList.remove("nav-open")));
