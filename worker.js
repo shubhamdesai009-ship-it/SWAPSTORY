@@ -33,24 +33,29 @@ const b64url = bytes =>
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 
-// UPDATED FIREBASE TOKEN VERIFICATION
+function getRazorpayConfig(env) {
+  return {
+    keyId: String(env.RAZORPAY_KEY_ID || "").trim(),
+    keySecret: String(env.RAZORPAY_KEY_SECRET || "").trim(),
+    planId: String(env.RAZORPAY_PLAN_ID || "").trim()
+  };
+}
+
 async function verifyFirebaseToken(token, env) {
-  if (!env.FIREBASE_API_KEY) {
-    throw new Error(
-      "FIREBASE_API_KEY is missing in Cloudflare."
-    );
+  const apiKey = String(env.FIREBASE_API_KEY || "").trim();
+
+  if (!apiKey) {
+    throw new Error("FIREBASE_API_KEY is missing in Cloudflare.");
   }
 
   const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${env.FIREBASE_API_KEY}`,
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        idToken: token
-      })
+      body: JSON.stringify({ idToken: token })
     }
   );
 
@@ -68,20 +73,17 @@ async function verifyFirebaseToken(token, env) {
   const user = data.users?.[0];
 
   if (!user?.localId) {
-    throw new Error(
-      "Firebase did not return a valid user account."
-    );
+    throw new Error("Firebase did not return a valid user account.");
   }
 
   return user.localId;
 }
 
 async function createSubscription(request, env) {
-  const auth =
-    request.headers.get("Authorization") || "";
-
-  const token =
-    auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const auth = request.headers.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ")
+    ? auth.slice(7).trim()
+    : "";
 
   if (!token) {
     return json({
@@ -99,48 +101,83 @@ async function createSubscription(request, env) {
     }, 401, request);
   }
 
-  if (
-    !env.RAZORPAY_KEY_ID ||
-    !env.RAZORPAY_KEY_SECRET ||
-    !env.RAZORPAY_PLAN_ID
-  ) {
+  const razorpay = getRazorpayConfig(env);
+
+  const missing = [];
+
+  if (!razorpay.keyId) missing.push("RAZORPAY_KEY_ID");
+  if (!razorpay.keySecret) missing.push("RAZORPAY_KEY_SECRET");
+  if (!razorpay.planId) missing.push("RAZORPAY_PLAN_ID");
+
+  if (missing.length > 0) {
     return json({
-      error: "Payment provider is not configured. Check Razorpay credentials and plan ID."
+      error: "Worker cannot read these Razorpay settings: " +
+        missing.join(", "),
+      diagnostic: {
+        keyIdAvailable: Boolean(razorpay.keyId),
+        keySecretAvailable: Boolean(razorpay.keySecret),
+        planIdAvailable: Boolean(razorpay.planId)
+      }
     }, 503, request);
   }
 
-  const basic = btoa(
-    `${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`
-  );
+  let basic;
 
-  const res = await fetch(
-    "https://api.razorpay.com/v1/subscriptions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${basic}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        plan_id: env.RAZORPAY_PLAN_ID,
-        total_count: 120,
-        quantity: 1,
-        customer_notify: 1,
-        notes: {
-          firebase_uid: uid,
-          product: "SwapStory Chat Subscription"
-        }
-      })
-    }
-  );
+  try {
+    basic = btoa(
+      `${razorpay.keyId}:${razorpay.keySecret}`
+    );
+  } catch (e) {
+    return json({
+      error: "Could not prepare Razorpay authentication."
+    }, 500, request);
+  }
 
-  const data = await res.json();
+  let res;
+  let data;
+
+  try {
+    res = await fetch(
+      "https://api.razorpay.com/v1/subscriptions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          plan_id: razorpay.planId,
+          total_count: 120,
+          quantity: 1,
+          customer_notify: 1,
+          notes: {
+            firebase_uid: uid,
+            product: "SwapStory Chat Subscription"
+          }
+        })
+      }
+    );
+
+    data = await res.json();
+  } catch (e) {
+    return json({
+      error: "Could not connect to Razorpay. Please try again."
+    }, 502, request);
+  }
 
   if (!res.ok) {
     return json({
       error:
         data.error?.description ||
-        "Razorpay could not create the subscription."
+        data.error?.reason ||
+        "Razorpay could not create the subscription.",
+      razorpay_error_code: data.error?.code || null
+    }, 502, request);
+  }
+
+  if (!data.id || !data.short_url) {
+    return json({
+      error: "Razorpay did not return a valid subscription checkout URL."
     }, 502, request);
   }
 
@@ -209,15 +246,15 @@ async function signServiceAccountJwt(sa) {
 }
 
 async function firestoreAccessToken(env) {
-  const sa = JSON.parse(
-    env.FIREBASE_SERVICE_ACCOUNT_JSON
-  );
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    throw new Error("Firebase service account is missing.");
+  }
 
+  const sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
   const assertion = await signServiceAccountJwt(sa);
 
   const r = await fetch(
-    sa.token_uri ||
-      "https://oauth2.googleapis.com/token",
+    sa.token_uri || "https://oauth2.googleapis.com/token",
     {
       method: "POST",
       headers: {
@@ -246,6 +283,10 @@ async function firestoreAccessToken(env) {
 async function writeBilling(uid, fields, env) {
   const token = await firestoreAccessToken(env);
   const project = env.FIREBASE_PROJECT_ID;
+
+  if (!project) {
+    throw new Error("FIREBASE_PROJECT_ID is missing.");
+  }
 
   const url =
     `https://firestore.googleapis.com/v1/projects/${project}/databases/(default)/documents/users/${uid}/billing/current`;
@@ -296,9 +337,7 @@ async function verifyWebhook(request, env, raw) {
 
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(
-      env.RAZORPAY_WEBHOOK_SECRET
-    ),
+    new TextEncoder().encode(env.RAZORPAY_WEBHOOK_SECRET),
     {
       name: "HMAC",
       hash: "SHA-256"
@@ -355,8 +394,7 @@ async function webhook(request, env) {
 
   const event = JSON.parse(raw);
 
-  const sub =
-    event.payload?.subscription?.entity;
+  const sub = event.payload?.subscription?.entity;
 
   if (!sub) {
     return json({
@@ -447,10 +485,7 @@ export default {
           }, 403, request);
         }
 
-        return await createSubscription(
-          request,
-          env
-        );
+        return await createSubscription(request, env);
       }
 
       if (
