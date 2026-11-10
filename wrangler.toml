@@ -1,5 +1,5 @@
 
-name = "swapstory-api"
+name = "swapstory"
 main = "worker.js"
 compatibility_date = "2026-11-06"
 keep_vars = true
