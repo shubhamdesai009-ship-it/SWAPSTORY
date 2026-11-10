@@ -1,6 +1,11 @@
+
 name = "swapstory-api"
 main = "worker.js"
 compatibility_date = "2026-11-06"
 
 [observability]
 enabled = true
+
+[vars]
+FIREBASE_PROJECT_ID = "swapstory-ae36a"
+FIREBASE_API_KEY = "PASTE_YOUR_EXISTING_FIREBASE_WEB_API_KEY_HERE"
