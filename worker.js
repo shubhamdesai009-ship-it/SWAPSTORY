@@ -33,36 +33,60 @@ const b64url = bytes =>
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 
+// UPDATED FIREBASE TOKEN VERIFICATION
 async function verifyFirebaseToken(token, env) {
+  if (!env.FIREBASE_API_KEY) {
+    throw new Error(
+      "FIREBASE_API_KEY is missing in Cloudflare."
+    );
+  }
+
   const res = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${env.FIREBASE_API_KEY}`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken: token })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        idToken: token
+      })
     }
   );
 
+  const data = await res.json();
+
   if (!res.ok) {
-    throw new Error("Invalid or expired sign-in. Please sign in again.");
+    const firebaseError =
+      data.error?.message || "UNKNOWN_FIREBASE_ERROR";
+
+    throw new Error(
+      `Firebase verification failed: ${firebaseError}`
+    );
   }
 
-  const data = await res.json();
   const user = data.users?.[0];
 
   if (!user?.localId) {
-    throw new Error("Could not verify account.");
+    throw new Error(
+      "Firebase did not return a valid user account."
+    );
   }
 
   return user.localId;
 }
 
 async function createSubscription(request, env) {
-  const auth = request.headers.get("Authorization") || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const auth =
+    request.headers.get("Authorization") || "";
+
+  const token =
+    auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
 
   if (!token) {
-    return json({ error: "Sign in is required." }, 401, request);
+    return json({
+      error: "Sign in is required. Firebase token is missing."
+    }, 401, request);
   }
 
   let uid;
@@ -70,7 +94,9 @@ async function createSubscription(request, env) {
   try {
     uid = await verifyFirebaseToken(token, env);
   } catch (e) {
-    return json({ error: e.message }, 401, request);
+    return json({
+      error: e.message
+    }, 401, request);
   }
 
   if (
@@ -79,7 +105,7 @@ async function createSubscription(request, env) {
     !env.RAZORPAY_PLAN_ID
   ) {
     return json({
-      error: "Payment provider is not configured. Add Razorpay credentials and a ₹99 monthly plan."
+      error: "Payment provider is not configured. Check Razorpay credentials and plan ID."
     }, 503, request);
   }
 
@@ -112,7 +138,8 @@ async function createSubscription(request, env) {
 
   if (!res.ok) {
     return json({
-      error: data.error?.description ||
+      error:
+        data.error?.description ||
         "Razorpay could not create the subscription."
     }, 502, request);
   }
@@ -129,7 +156,10 @@ async function signServiceAccountJwt(sa) {
 
   const header = b64url(
     new TextEncoder().encode(
-      JSON.stringify({ alg: "RS256", typ: "JWT" })
+      JSON.stringify({
+        alg: "RS256",
+        typ: "JWT"
+      })
     )
   );
 
@@ -138,7 +168,8 @@ async function signServiceAccountJwt(sa) {
       JSON.stringify({
         iss: sa.client_email,
         scope: "https://www.googleapis.com/auth/datastore",
-        aud: sa.token_uri || "https://oauth2.googleapis.com/token",
+        aud: sa.token_uri ||
+          "https://oauth2.googleapis.com/token",
         iat: now,
         exp: now + 3600
       })
@@ -178,11 +209,15 @@ async function signServiceAccountJwt(sa) {
 }
 
 async function firestoreAccessToken(env) {
-  const sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  const sa = JSON.parse(
+    env.FIREBASE_SERVICE_ACCOUNT_JSON
+  );
+
   const assertion = await signServiceAccountJwt(sa);
 
   const r = await fetch(
-    sa.token_uri || "https://oauth2.googleapis.com/token",
+    sa.token_uri ||
+      "https://oauth2.googleapis.com/token",
     {
       method: "POST",
       headers: {
@@ -217,7 +252,9 @@ async function writeBilling(uid, fields, env) {
 
   const body = {
     fields: {
-      status: { stringValue: fields.status },
+      status: {
+        stringValue: fields.status
+      },
       subscriptionId: {
         stringValue: fields.subscriptionId || ""
       },
@@ -227,7 +264,8 @@ async function writeBilling(uid, fields, env) {
       currentPeriodEnd: {
         timestampValue: new Date(
           (fields.currentEnd ||
-            Math.floor(Date.now() / 1000) + 30 * 86400) * 1000
+            Math.floor(Date.now() / 1000) +
+            30 * 86400) * 1000
         ).toISOString()
       },
       updatedAt: {
@@ -258,8 +296,13 @@ async function verifyWebhook(request, env, raw) {
 
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(env.RAZORPAY_WEBHOOK_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
+    new TextEncoder().encode(
+      env.RAZORPAY_WEBHOOK_SECRET
+    ),
+    {
+      name: "HMAC",
+      hash: "SHA-256"
+    },
     false,
     ["sign"]
   );
@@ -274,14 +317,19 @@ async function verifyWebhook(request, env, raw) {
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 
-  if (!signature || signature.length !== expected.length) {
+  if (
+    !signature ||
+    signature.length !== expected.length
+  ) {
     return false;
   }
 
   let diff = 0;
 
   for (let i = 0; i < signature.length; i++) {
-    diff |= signature.charCodeAt(i) ^ expected.charCodeAt(i);
+    diff |=
+      signature.charCodeAt(i) ^
+      expected.charCodeAt(i);
   }
 
   return diff === 0;
@@ -292,26 +340,38 @@ async function webhook(request, env) {
     !env.RAZORPAY_WEBHOOK_SECRET ||
     !env.FIREBASE_SERVICE_ACCOUNT_JSON
   ) {
-    return json({ error: "Webhook is not configured." }, 503, request);
+    return json({
+      error: "Webhook is not configured."
+    }, 503, request);
   }
 
   const raw = await request.text();
 
   if (!await verifyWebhook(request, env, raw)) {
-    return json({ error: "Invalid signature." }, 401, request);
+    return json({
+      error: "Invalid signature."
+    }, 401, request);
   }
 
   const event = JSON.parse(raw);
-  const sub = event.payload?.subscription?.entity;
+
+  const sub =
+    event.payload?.subscription?.entity;
 
   if (!sub) {
-    return json({ ok: true, ignored: true }, 200, request);
+    return json({
+      ok: true,
+      ignored: true
+    }, 200, request);
   }
 
   const uid = sub.notes?.firebase_uid;
 
   if (!uid) {
-    return json({ ok: true, ignored: true }, 200, request);
+    return json({
+      ok: true,
+      ignored: true
+    }, 200, request);
   }
 
   const active = [
@@ -320,7 +380,8 @@ async function webhook(request, env) {
     "subscription.resumed"
   ].includes(event.event);
 
-  const cancelled = event.event === "subscription.cancelled";
+  const cancelled =
+    event.event === "subscription.cancelled";
 
   const currentEnd =
     sub.current_end ||
@@ -328,7 +389,8 @@ async function webhook(request, env) {
     Math.floor(Date.now() / 1000);
 
   const stillPaid =
-    cancelled && currentEnd > Math.floor(Date.now() / 1000);
+    cancelled &&
+    currentEnd > Math.floor(Date.now() / 1000);
 
   const status =
     (active || stillPaid) ? "active" : "inactive";
@@ -343,7 +405,9 @@ async function webhook(request, env) {
     env
   );
 
-  return json({ ok: true }, 200, request);
+  return json({
+    ok: true
+  }, 200, request);
 }
 
 export default {
@@ -352,12 +416,18 @@ export default {
     const origin = request.headers.get("Origin");
 
     if (origin && origin !== ALLOWED_ORIGIN) {
-      return new Response("Forbidden origin", { status: 403 });
+      return new Response(
+        "Forbidden origin",
+        { status: 403 }
+      );
     }
 
     if (request.method === "OPTIONS") {
       if (origin !== ALLOWED_ORIGIN) {
-        return new Response("Forbidden origin", { status: 403 });
+        return new Response(
+          "Forbidden origin",
+          { status: 403 }
+        );
       }
 
       return new Response(null, {
@@ -377,7 +447,10 @@ export default {
           }, 403, request);
         }
 
-        return await createSubscription(request, env);
+        return await createSubscription(
+          request,
+          env
+        );
       }
 
       if (
@@ -387,7 +460,9 @@ export default {
         return await webhook(request, env);
       }
 
-      return json({ error: "Not found" }, 404, request);
+      return json({
+        error: "Not found"
+      }, 404, request);
 
     } catch (e) {
       return json({
