@@ -4,7 +4,7 @@ const ALLOWED_ORIGIN = "https://swapstory.pages.dev";
 function corsHeaders(request) {
   const origin = request.headers.get("Origin");
   const headers = {
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Methods": "POST,OPTIONS,GET",
     "Access-Control-Allow-Headers": "Authorization,Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
@@ -475,6 +475,21 @@ export default {
     }
 
     try {
+      // TEMPORARY DIAGNOSTIC ENDPOINT
+      if (
+        request.method === "GET" &&
+        url.pathname === "/check-config"
+      ) {
+        const razorpay = getRazorpayConfig(env);
+
+        return json({
+          worker: "swapstory",
+          razorpayKeyId: Boolean(razorpay.keyId),
+          razorpayKeySecret: Boolean(razorpay.keySecret),
+          razorpayPlanId: Boolean(razorpay.planId)
+        }, 200, request);
+      }
+
       if (
         request.method === "POST" &&
         url.pathname === "/create-subscription"
