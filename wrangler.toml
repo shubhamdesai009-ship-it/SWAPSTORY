@@ -4,5 +4,10 @@ main = "worker.js"
 compatibility_date = "2026-11-06"
 keep_vars = true
 
+[vars]
+FIREBASE_API_KEY = "AIzaSyDiKqzmCH7BKgLn6_236UnIFGPwmVLHJ8Q"
+FIREBASE_PROJECT_ID = "swapstory-ae36a"
+RAZORPAY_PLAN_ID = "plan_TxK9GF8N0sbpEA"
+
 [observability]
 enabled = true
